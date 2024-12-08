@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.backend.dto.OrganisationDto;
+import com.backend.dto.TaskDto;
 import com.backend.response.ApiResponse;
 import com.backend.service.OrganisationService;
 
@@ -58,5 +59,11 @@ public class OrganisationController {
     public ResponseEntity<OrganisationDto> getOrganisationWithId(@PathVariable Integer organisationId)
     {
         return new ResponseEntity<>(this.organisationService.getOrganisationById(organisationId),HttpStatus.OK);
+    }
+
+    @GetMapping("/{organisationId}/comments")
+    public ResponseEntity<List<TaskDto>> getAllTasksByOrgId(@PathVariable Integer organisationId)
+    {
+        return new ResponseEntity<>(this.organisationService.getAllTasksByOrgId(organisationId),HttpStatus.OK);
     }
 }

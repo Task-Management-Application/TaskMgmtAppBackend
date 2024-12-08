@@ -8,11 +8,17 @@ import java.util.stream.Collectors;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
+import com.backend.converter.OrganisationConverter;
+import com.backend.converter.TaskConverter;
 import com.backend.dto.OrganisationDto;
+import com.backend.dto.TaskDto;
 import com.backend.entity.Organisation;
+import com.backend.entity.Task;
 import com.backend.exception.ResourceNotFoundException;
 import com.backend.repository.OrganisationRepository;
+import com.backend.repository.UserRepository;
 
 
 @Service
@@ -21,15 +27,22 @@ public class OrganisationServiceImpl implements OrganisationService {
     private OrganisationRepository organisationRepo;
 
     @Autowired
-    private ModelMapper modelMapper;
+    private UserRepository userRepo;
+
+    @Autowired
+    private OrganisationConverter orgConverter;
+
+    @Autowired
+    private TaskConverter taskConverter;
+
     @Override
     public OrganisationDto createOrganisation(OrganisationDto organisation)
     {
         if(organisation.getCreatedAt()==null)
             organisation.setCreatedAt(new Date());
-        Organisation newOrganisation = dtoToOrganisation(organisation);
+        Organisation newOrganisation = orgConverter.OrganisationDtoToOrganisation(organisation);
         this.organisationRepo.save(newOrganisation);
-        return OrganisationToDto(newOrganisation);
+        return orgConverter.OrganisationToOrganisationDto(newOrganisation);
     }
 
     @Override
@@ -40,9 +53,8 @@ public class OrganisationServiceImpl implements OrganisationService {
         foundOrganisation.setOrgName(organisation.getOrgName());
         foundOrganisation.setCreatedAt(organisation.getCreatedAt());
         foundOrganisation.setCreatedBy(organisation.getCreatedBy());
-        
         Organisation updatedOrganisation = this.organisationRepo.save(foundOrganisation);
-        return OrganisationToDto(updatedOrganisation);
+        return orgConverter.OrganisationToOrganisationDto(updatedOrganisation);
     }
 
     @Override
@@ -50,14 +62,14 @@ public class OrganisationServiceImpl implements OrganisationService {
     {
         Organisation foundOrganisation = this.organisationRepo.findById(organisationId)
                 .orElseThrow(()-> new ResourceNotFoundException("Organisation", "id", organisationId));
-        return OrganisationToDto(foundOrganisation);
+        return orgConverter.OrganisationToOrganisationDto(foundOrganisation);
     }
 
     @Override
     public List<OrganisationDto> getAllOrganisations()
     {
         List<Organisation> organisations = this.organisationRepo.findAll();
-        return organisations.stream().map(Organisation->this.OrganisationToDto(Organisation)).collect(Collectors.toList());
+        return organisations.stream().map(Organisation->this.orgConverter.OrganisationToOrganisationDto(Organisation)).collect(Collectors.toList());
     }
 
     @Override
@@ -68,11 +80,12 @@ public class OrganisationServiceImpl implements OrganisationService {
         this.organisationRepo.delete(foundOrganisation);
     }
 
-    private Organisation dtoToOrganisation(OrganisationDto organisationDto) {
-        return this.modelMapper.map(organisationDto, Organisation.class);
-    }
-
-    private OrganisationDto OrganisationToDto(Organisation organisation) {
-        return this.modelMapper.map(organisation,OrganisationDto.class);
+    @Override
+    public List<TaskDto> getAllTasksByOrgId(Integer organisationId)
+    {
+        Organisation foundOrganisation = this.organisationRepo.findById(organisationId)
+                .orElseThrow(()-> new ResourceNotFoundException("Organisation", "id", organisationId));
+        List<Task> taskList = foundOrganisation.getTasks();
+        return taskList.stream().map(task -> taskConverter.TaskToTaskDto(task)).collect(Collectors.toList());
     }
 }

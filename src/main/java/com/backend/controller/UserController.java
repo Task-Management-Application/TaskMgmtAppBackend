@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.backend.dto.CommentDto;
+import com.backend.dto.TaskDto;
 import com.backend.dto.UserDto;
 import com.backend.response.ApiResponse;
 import com.backend.service.UserService;
@@ -54,9 +56,27 @@ public class UserController {
         return ResponseEntity.ok(this.userService.getAllUsers());
     }
 
+    @GetMapping("/{userId}/comments")
+    public ResponseEntity<List<CommentDto>> getCommentsWithUserId(@PathVariable Integer userId)
+    {
+        return new ResponseEntity<>(this.userService.getAllCommentsByUserId(userId),HttpStatus.OK);
+    }
+
     @GetMapping("/{userId}")
     public ResponseEntity<UserDto> getUserWithId(@PathVariable Integer userId)
     {
         return new ResponseEntity<>(this.userService.getUserById(userId),HttpStatus.OK);
+    }
+
+    @GetMapping("/{userId}/assignedTasks")
+    public ResponseEntity<List<TaskDto>> getAssignedTasksForUserId(@PathVariable Integer userId)
+    {
+        return new ResponseEntity<>(this.userService.getAllAssignedTasksForUserId(userId),HttpStatus.OK);
+    }
+
+    @GetMapping("/{userId}/createdTasks")
+    public ResponseEntity<List<TaskDto>> getCreatedTasksForUserId(@PathVariable Integer userId)
+    {
+        return new ResponseEntity<>(this.userService.getAllCreatedTasksForuserId(userId),HttpStatus.OK);
     }
 }

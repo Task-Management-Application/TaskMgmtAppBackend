@@ -8,10 +8,15 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.backend.converter.CommentConverter;
+import com.backend.converter.TaskConverter;
+import com.backend.dto.CommentDto;
 import com.backend.dto.TaskDto;
+import com.backend.entity.Comment;
 import com.backend.entity.Task;
 import com.backend.exception.ResourceNotFoundException;
 import com.backend.repository.TaskRepository;
+import com.backend.repository.UserRepository;
 
 @Service
 public class TaskServiceImpl implements TaskService {
@@ -19,16 +24,21 @@ public class TaskServiceImpl implements TaskService {
     private TaskRepository taskRepo;
 
     @Autowired
-    private ModelMapper modelMapper;
+    private UserRepository userRepo;
 
+    @Autowired
+    private CommentConverter commentConverter;
+
+    @Autowired
+    private TaskConverter taskConverter;
     @Override
     public TaskDto createTask(TaskDto taskDto) {
         if (taskDto.getCreatedAt() == null) {
             taskDto.setCreatedAt(new Date());
         }
-        Task newTask = dtoToTask(taskDto);
+        Task newTask = taskConverter.TaskDtoToTask(taskDto);
         this.taskRepo.save(newTask);
-        return taskToDto(newTask);
+        return taskConverter.TaskToTaskDto(newTask);
     }
 
     @Override
@@ -39,26 +49,27 @@ public class TaskServiceImpl implements TaskService {
         foundTask.setTitle(taskDto.getTitle());
         foundTask.setDescrString(taskDto.getDescrString());
         foundTask.setStatus(taskDto.getStatus());
-        foundTask.setAssignedTo(taskDto.getAssignedTo());
+        foundTask.setAssignedTo(this.userRepo.findById(taskDto.getAssignedTo())
+                .orElseThrow(()->new ResourceNotFoundException("User", "Id", taskDto.getAssignedTo())));
         foundTask.setLastUpdatedAt(new Date());
         foundTask.setDeadline(taskDto.getDeadline());
         foundTask.setPriority(taskDto.getPriority());
 
         Task updatedTask = this.taskRepo.save(foundTask);
-        return taskToDto(updatedTask);
+        return taskConverter.TaskToTaskDto(updatedTask);
     }
 
     @Override
     public TaskDto getTaskById(Integer taskId) throws ResourceNotFoundException {
         Task foundTask = this.taskRepo.findById(taskId)
                 .orElseThrow(() -> new ResourceNotFoundException("Task", "id", taskId));
-        return taskToDto(foundTask);
+        return taskConverter.TaskToTaskDto(foundTask);
     }
 
     @Override
     public List<TaskDto> getAllTasks() {
         List<Task> tasks = this.taskRepo.findAll();
-        return tasks.stream().map(this::taskToDto).collect(Collectors.toList());
+        return tasks.stream().map(task -> taskConverter.TaskToTaskDto(task)).collect(Collectors.toList());
     }
 
     @Override
@@ -67,12 +78,13 @@ public class TaskServiceImpl implements TaskService {
                 .orElseThrow(() -> new ResourceNotFoundException("Task", "id", taskId));
         this.taskRepo.delete(foundTask);
     }
+    @Override
+    public List<CommentDto> getAllCommentByTaskId(Integer taskId)
+    {
+        Task foundTask = this.taskRepo.findById(taskId)
+                .orElseThrow(()->new ResourceNotFoundException("Task", "Id", taskId));
+        List<Comment> commentList = foundTask.getComments();
+        return commentList.stream().map(comment -> commentConverter.commentToCommentDto(comment)).collect(Collectors.toList());
 
-    private Task dtoToTask(TaskDto taskDto) {
-        return this.modelMapper.map(taskDto, Task.class);
-    }
-
-    private TaskDto taskToDto(Task task) {
-        return this.modelMapper.map(task, TaskDto.class);
     }
 }

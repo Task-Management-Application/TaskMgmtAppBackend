@@ -7,11 +7,15 @@ import java.util.stream.Collectors;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
+import com.backend.converter.CommentConverter;
 import com.backend.dto.CommentDto;
 import com.backend.entity.Comment;
 import com.backend.exception.ResourceNotFoundException;
 import com.backend.repository.CommentRepository;
+import com.backend.repository.TaskRepository;
+import com.backend.repository.UserRepository;
 
 @Service
 public class CommentServiceImpl implements CommentService {
@@ -19,16 +23,22 @@ public class CommentServiceImpl implements CommentService {
     private CommentRepository commentRepo;
 
     @Autowired
-    private ModelMapper modelMapper;
+    private TaskRepository taskRepo;
+
+    @Autowired
+    private UserRepository userRepo;
+
+    @Autowired
+    private CommentConverter commentConverter;
 
     @Override
     public CommentDto createComment(CommentDto commentDto) {
         if (commentDto.getTimestamp() == null) {
             commentDto.setTimestamp(new Date());
         }
-        Comment newComment = dtoToComment(commentDto);
+        Comment newComment = commentConverter.commentDtoToComment(commentDto);
         this.commentRepo.save(newComment);
-        return commentToDto(newComment);
+        return commentConverter.commentToCommentDto(newComment);
     }
 
     @Override
@@ -36,27 +46,28 @@ public class CommentServiceImpl implements CommentService {
         Comment foundComment = this.commentRepo.findById(commentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Comment", "id", commentId));
         
-        foundComment.setUserId(commentDto.getUserId());
+        foundComment.setUser(this.userRepo.findById(commentDto.getUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("User", "Id", commentDto.getUserId())));
         foundComment.setComment(commentDto.getComment());
-        foundComment.setTaskId(commentDto.getTaskId());
+        foundComment.setTask(this.taskRepo.findById(commentDto.getTaskId()).orElseThrow(()->new ResourceNotFoundException("Task", "Id", commentDto.getTaskId())));
         foundComment.setTimestamp(commentDto.getTimestamp());
         foundComment.setAttachmentURL(commentDto.getAttachmentURL());
 
         Comment updatedComment = this.commentRepo.save(foundComment);
-        return commentToDto(updatedComment);
+        return commentConverter.commentToCommentDto(updatedComment);
     }
 
     @Override
     public CommentDto getCommentById(Integer commentId) throws ResourceNotFoundException {
         Comment foundComment = this.commentRepo.findById(commentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Comment", "id", commentId));
-        return commentToDto(foundComment);
+        return commentConverter.commentToCommentDto(foundComment);
     }
 
     @Override
     public List<CommentDto> getAllComments() {
         List<Comment> comments = this.commentRepo.findAll();
-        return comments.stream().map(this::commentToDto).collect(Collectors.toList());
+        return comments.stream().map(comment -> commentConverter.commentToCommentDto(comment)).collect(Collectors.toList());
     }
 
     @Override
@@ -64,13 +75,5 @@ public class CommentServiceImpl implements CommentService {
         Comment foundComment = this.commentRepo.findById(commentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Comment", "id", commentId));
         this.commentRepo.delete(foundComment);
-    }
-
-    private Comment dtoToComment(CommentDto commentDto) {
-        return this.modelMapper.map(commentDto, Comment.class);
-    }
-
-    private CommentDto commentToDto(Comment comment) {
-        return this.modelMapper.map(comment, CommentDto.class);
     }
 }

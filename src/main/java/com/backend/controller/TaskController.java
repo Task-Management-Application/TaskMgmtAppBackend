@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.backend.dto.CommentDto;
 import com.backend.dto.TaskDto;
 import com.backend.response.ApiResponse;
 import com.backend.service.TaskService;
@@ -52,5 +53,10 @@ public class TaskController {
     @GetMapping("/{taskId}")
     public ResponseEntity<TaskDto> getTaskById(@PathVariable Integer taskId) {
         return new ResponseEntity<>(this.taskService.getTaskById(taskId), HttpStatus.OK);
+    }
+
+    @GetMapping("/{taskId}/comments")
+    public ResponseEntity<List<CommentDto>> getCommentsByTaskId(@PathVariable Integer taskId) {
+        return new ResponseEntity<>(this.taskService.getAllCommentByTaskId(taskId), HttpStatus.OK);
     }
 }
