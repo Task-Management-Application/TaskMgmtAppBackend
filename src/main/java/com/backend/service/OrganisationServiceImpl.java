@@ -12,10 +12,13 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import com.backend.converter.OrganisationConverter;
 import com.backend.converter.TaskConverter;
+import com.backend.converter.UserConverter;
 import com.backend.dto.OrganisationDto;
 import com.backend.dto.TaskDto;
+import com.backend.dto.UserDto;
 import com.backend.entity.Organisation;
 import com.backend.entity.Task;
+import com.backend.entity.User;
 import com.backend.exception.ResourceNotFoundException;
 import com.backend.repository.OrganisationRepository;
 import com.backend.repository.UserRepository;
@@ -30,6 +33,12 @@ public class OrganisationServiceImpl implements OrganisationService {
     private UserRepository userRepo;
 
     @Autowired
+    private UserService userService;
+
+    @Autowired
+    private UserConverter userConverter;
+
+    @Autowired
     private OrganisationConverter orgConverter;
 
     @Autowired
@@ -42,7 +51,12 @@ public class OrganisationServiceImpl implements OrganisationService {
             organisation.setCreatedAt(new Date());
         Organisation newOrganisation = orgConverter.OrganisationDtoToOrganisation(organisation);
         this.organisationRepo.save(newOrganisation);
-        return orgConverter.OrganisationToOrganisationDto(newOrganisation);
+        
+        OrganisationDto newOrganisationDto = orgConverter.OrganisationToOrganisationDto(newOrganisation);
+        User foundUser = this.userRepo.findById(newOrganisationDto.getCreatedBy())
+                .orElseThrow(() -> new ResourceNotFoundException("User", "Id", newOrganisationDto.getCreatedBy()));
+        userService.addUserToOrganisation(foundUser.getUserId(), newOrganisationDto.getOrgId());
+        return newOrganisationDto;
     }
 
     @Override
@@ -87,5 +101,15 @@ public class OrganisationServiceImpl implements OrganisationService {
                 .orElseThrow(()-> new ResourceNotFoundException("Organisation", "id", organisationId));
         List<Task> taskList = foundOrganisation.getTasks();
         return taskList.stream().map(task -> taskConverter.TaskToTaskDto(task)).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<UserDto> getAllUsersByOrgId(Integer organisationId)
+    {
+        Organisation foundOrganisation = this.organisationRepo.findById(organisationId)
+                .orElseThrow(()-> new ResourceNotFoundException("Organisation", "id", organisationId));
+        List<User> userList = foundOrganisation.getUsers();
+        return userList.stream().map(user -> userConverter.UserToUserDto(user)).collect(Collectors.toList());
+
     }
 }

@@ -22,4 +22,6 @@ public interface OrganisationService {
     void deleteOrganisation(Integer organisationId);
 
     List<TaskDto> getAllTasksByOrgId(Integer organisationId);
+
+    List<UserDto> getAllUsersByOrgId(Integer organisationId);
 }
