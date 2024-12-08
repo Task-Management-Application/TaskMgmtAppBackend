@@ -9,7 +9,14 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.backend.converter.CommentConverter;
+import com.backend.converter.TaskConverter;
+import com.backend.converter.UserConverter;
+import com.backend.dto.CommentDto;
+import com.backend.dto.TaskDto;
 import com.backend.dto.UserDto;
+import com.backend.entity.Comment;
+import com.backend.entity.Task;
 import com.backend.entity.User;
 import com.backend.exception.ResourceNotFoundException;
 import com.backend.repository.UserRepository;
@@ -21,15 +28,21 @@ public class UserServiceImpl implements UserService {
     private UserRepository userRepo;
 
     @Autowired
-    private ModelMapper modelMapper;
+    private UserConverter userConverter;
+
+    @Autowired
+    private CommentConverter commentConverter;
+
+    @Autowired
+    private TaskConverter taskConverter;
     @Override
     public UserDto createUser(UserDto user)
     {
         if(user.getCreatedAt()==null)
             user.setCreatedAt(new Date());
-        User newUser = dtoToUser(user);
+        User newUser = this.userConverter.UserDtoToUser(user);
         this.userRepo.save(newUser);
-        return userToDto(newUser);
+        return this.userConverter.UserToUserDto(newUser);
     }
 
     @Override
@@ -53,7 +66,7 @@ public class UserServiceImpl implements UserService {
             foundUser.setProfilePic(user.getProfilePic());
         
         User updatedUser = this.userRepo.save(foundUser);
-        return userToDto(updatedUser);
+        return this.userConverter.UserToUserDto(updatedUser);
     }
 
     @Override
@@ -61,14 +74,14 @@ public class UserServiceImpl implements UserService {
     {
         User foundUser = this.userRepo.findById(userId)
                 .orElseThrow(()-> new ResourceNotFoundException("User", "id", userId));
-        return userToDto(foundUser);
+        return this.userConverter.UserToUserDto(foundUser);
     }
 
     @Override
     public List<UserDto> getAllUsers()
     {
         List<User> users = this.userRepo.findAll();
-        return users.stream().map(user->this.userToDto(user)).collect(Collectors.toList());
+        return users.stream().map(user->this.userConverter.UserToUserDto(user)).collect(Collectors.toList());
     }
 
     @Override
@@ -79,11 +92,30 @@ public class UserServiceImpl implements UserService {
         this.userRepo.delete(foundUser);
     }
 
-    private User dtoToUser(UserDto userDto) {
-        return this.modelMapper.map(userDto, User.class);
+    @Override
+    public List<CommentDto> getAllCommentsByUserId(Integer userId)
+    {
+        User foundUser = this.userRepo.findById(userId)
+                .orElseThrow(()->new ResourceNotFoundException("User", "Id", userId));
+        List<Comment> commentList = foundUser.getComments();
+        return commentList.stream().map(comment -> commentConverter.commentToCommentDto(comment)).collect(Collectors.toList());
+    } 
+
+    @Override
+    public List<TaskDto> getAllAssignedTasksForUserId(Integer userId)
+    {
+        User foundUser = this.userRepo.findById(userId)
+                .orElseThrow(()->new ResourceNotFoundException("User", "Id", userId));
+        List<Task> taskList = foundUser.getAssignedToTasks();
+        return taskList.stream().map(task -> taskConverter.TaskToTaskDto(task)).collect(Collectors.toList());
     }
 
-    private UserDto userToDto(User user) {
-        return this.modelMapper.map(user,UserDto.class);
+    @Override
+    public List<TaskDto> getAllCreatedTasksForuserId(Integer userId)
+    {
+        User foundUser = this.userRepo.findById(userId)
+                .orElseThrow(()->new ResourceNotFoundException("User", "Id", userId));
+        List<Task> taskList = foundUser.getCreatedByTasks();
+        return taskList.stream().map(task -> taskConverter.TaskToTaskDto(task)).collect(Collectors.toList());
     }
 }
