@@ -28,6 +28,7 @@ public class UserDto
 
 	@NotEmpty(message = "Dob must not be empty")
     private String dob;
+
 	private Date createdAt;
 	private Date lastLoginAt;
 	private String profilePic;

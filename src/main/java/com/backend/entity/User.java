@@ -13,6 +13,8 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
@@ -51,7 +53,13 @@ public class User {
 	@OneToMany(mappedBy = "user",cascade = CascadeType.ALL,fetch = FetchType.LAZY)
 	private List<Comment> comments;
 	//it will be many to many relationships
-	// private List<Organisation> orgList;
+	@ManyToMany
+	@JoinTable(
+        name = "user_organisation",
+        joinColumns = @JoinColumn(name = "user_id"),
+        inverseJoinColumns = @JoinColumn(name = "organisation_id")
+    )
+	private List<Organisation> orgList;
 	@OneToMany(mappedBy = "assignedTo",cascade = CascadeType.ALL,fetch = FetchType.LAZY)
 	private List<Task> assignedToTasks;
 	@OneToMany(mappedBy = "createdBy",cascade = CascadeType.ALL,fetch = FetchType.LAZY)

@@ -10,15 +10,19 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.backend.converter.CommentConverter;
+import com.backend.converter.OrganisationConverter;
 import com.backend.converter.TaskConverter;
 import com.backend.converter.UserConverter;
 import com.backend.dto.CommentDto;
+import com.backend.dto.OrganisationDto;
 import com.backend.dto.TaskDto;
 import com.backend.dto.UserDto;
 import com.backend.entity.Comment;
+import com.backend.entity.Organisation;
 import com.backend.entity.Task;
 import com.backend.entity.User;
 import com.backend.exception.ResourceNotFoundException;
+import com.backend.repository.OrganisationRepository;
 import com.backend.repository.UserRepository;
 
 
@@ -28,10 +32,16 @@ public class UserServiceImpl implements UserService {
     private UserRepository userRepo;
 
     @Autowired
+    private OrganisationRepository orgRepo;
+
+    @Autowired
     private UserConverter userConverter;
 
     @Autowired
     private CommentConverter commentConverter;
+
+    @Autowired
+    private OrganisationConverter orgConverter;
 
     @Autowired
     private TaskConverter taskConverter;
@@ -117,5 +127,27 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(()->new ResourceNotFoundException("User", "Id", userId));
         List<Task> taskList = foundUser.getCreatedByTasks();
         return taskList.stream().map(task -> taskConverter.TaskToTaskDto(task)).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<OrganisationDto> getAllOrganisationsForuserId(Integer userId)
+    {
+        User foundUser = this.userRepo.findById(userId)
+                .orElseThrow(()->new ResourceNotFoundException("User", "Id", userId));
+        List<Organisation> orgList = foundUser.getOrgList();
+        return orgList.stream().map(org -> orgConverter.OrganisationToOrganisationDto(org)).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<UserDto> addUserToOrganisation(Integer userId, Integer orgId)
+    {
+        User foundUser = this.userRepo.findById(userId)
+                .orElseThrow(()->new ResourceNotFoundException("User", "Id", userId));
+        Organisation foundOrg = this.orgRepo.findById(orgId)
+                .orElseThrow(()->new ResourceNotFoundException("Organisation", "Id", orgId));
+        foundUser.getOrgList().add(foundOrg);
+        userRepo.save(foundUser);
+        List<User> memberUsers = foundOrg.getUsers();
+        return memberUsers==null? null : memberUsers.stream().map(user->userConverter.UserToUserDto(user)).collect(Collectors.toList());
     }
 }

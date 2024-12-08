@@ -5,8 +5,10 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 import com.backend.dto.CommentDto;
+import com.backend.dto.OrganisationDto;
 import com.backend.dto.TaskDto;
 import com.backend.dto.UserDto;
+import com.backend.entity.Organisation;
 import com.backend.entity.User;
 import com.backend.exception.ResourceNotFoundException;
 
@@ -26,4 +28,8 @@ public interface UserService {
     List<TaskDto> getAllAssignedTasksForUserId(Integer userId);
 
     List<TaskDto> getAllCreatedTasksForuserId(Integer userId);
+
+    List<UserDto> addUserToOrganisation(Integer userId, Integer orgId);
+
+    List<OrganisationDto> getAllOrganisationsForuserId(Integer userId);
 }
