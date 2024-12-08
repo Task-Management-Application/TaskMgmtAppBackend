@@ -1,4 +1,4 @@
-package com.backend.entity;
+package com.backend.dto;
 
 import java.util.Date;
 
@@ -6,16 +6,21 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.*;
+import lombok.Builder.Default;
 
-@Entity
 @NoArgsConstructor
 @Getter
 @Setter
-public class Task {
-    @Id
-	@GeneratedValue(strategy = GenerationType.AUTO)
+public class TaskDto
+{
     private int taskId;
+    @NotEmpty
+    @NotNull
     private String title;
     private String descrString;
     private String status;
@@ -25,5 +30,4 @@ public class Task {
     private Date lastUpdatedAt;
     private int deadline;
     private int priority;
-    //private List<Comment> comments;
 }
