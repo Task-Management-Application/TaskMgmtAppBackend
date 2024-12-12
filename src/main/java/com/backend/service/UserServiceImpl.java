@@ -1,5 +1,8 @@
 package com.backend.service;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collector;
@@ -7,7 +10,9 @@ import java.util.stream.Collectors;
 
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.backend.converter.CommentConverter;
 import com.backend.converter.OrganisationConverter;
@@ -29,6 +34,9 @@ import com.backend.repository.UserRepository;
 
 @Service
 public class UserServiceImpl implements UserService {
+    @Value("${project.image}")
+	private String path;
+    
     @Autowired
     private UserRepository userRepo;
 
@@ -49,6 +57,9 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     private AdminManagementService adminManagementService;
+
+    @Autowired
+    private FileService fileService;
 
     @Override
     public UserDto createUser(UserDto user)
@@ -157,5 +168,25 @@ public class UserServiceImpl implements UserService {
         userRepo.save(foundUser);
         List<User> memberUsers = foundOrg.getUsers();
         return memberUsers==null? null : memberUsers.stream().map(user->userConverter.UserToUserDto(user)).collect(Collectors.toList());
+    }
+
+    @Override
+    public InputStream downloadprofilePic(Integer userId) throws FileNotFoundException
+    {
+        User foundUser = this.userRepo.findById(userId)
+                .orElseThrow(()->new ResourceNotFoundException("User", "Id", userId));
+        String fileName = foundUser.getProfilePic();
+        return this.fileService.downlInputStream(path, fileName);
+    }
+
+    @Override
+    public String uploadProfilePic(Integer userId, MultipartFile file) throws IOException
+    {
+        User foundUser = this.userRepo.findById(userId)
+                .orElseThrow(()->new ResourceNotFoundException("User", "Id", userId));
+        String fileName = fileService.uploadImage(path, file);
+        foundUser.setProfilePic(fileName);
+        this.userRepo.save(foundUser);
+        return fileName;
     }
 }
