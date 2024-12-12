@@ -62,7 +62,7 @@ public class OrganisationServiceImpl implements OrganisationService {
         OrganisationDto newOrganisationDto = orgConverter.OrganisationToOrganisationDto(newOrganisation);
         User foundUser = this.userRepo.findById(newOrganisationDto.getCreatedBy())
                 .orElseThrow(() -> new ResourceNotFoundException("User", "Id", newOrganisationDto.getCreatedBy()));
-        userService.addUserToOrganisation(foundUser.getUserId(), newOrganisationDto.getOrgId());
+        userService.addUserToOrganisation(foundUser.getUserId(), foundUser.getUserId(), newOrganisationDto.getOrgId());
         adminManagementService.updateAdmin(newOrganisationDto.getCreatedBy(), newOrganisationDto.getOrgId(), true);
         return newOrganisationDto;
     }
