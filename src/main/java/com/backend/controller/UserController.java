@@ -20,6 +20,7 @@ import com.backend.dto.OrganisationDto;
 import com.backend.dto.TaskDto;
 import com.backend.dto.UserDto;
 import com.backend.response.ApiResponse;
+import com.backend.service.OrganisationService;
 import com.backend.service.UserService;
 
 import jakarta.validation.Valid;
@@ -30,6 +31,8 @@ public class UserController {
     @Autowired
     UserService userService;
 
+    @Autowired
+    OrganisationService organisationService;
 
     @PostMapping("/")
     public ResponseEntity<UserDto> createUser(@Valid @RequestBody UserDto userDto)
@@ -90,8 +93,18 @@ public class UserController {
 
     @PostMapping("/join/{userId}/{organisationId}")
     public ResponseEntity<List<UserDto>> addUserToOrganisation(
-            @PathVariable Integer userId,
+            @PathVariable Integer requestingUserId,
+            @PathVariable Integer requestedUserId,
             @PathVariable Integer organisationId) {
-        return new ResponseEntity<>(this.userService.addUserToOrganisation(userId, organisationId), HttpStatus.OK);
+        return new ResponseEntity<>(this.userService.addUserToOrganisation(requestingUserId, requestedUserId, organisationId), HttpStatus.OK);
+    }
+
+    @PostMapping("/Admins/make/{requestingUserId}/{requestedUserId}/{organisationId}")
+    public ResponseEntity makeAdmin(
+            @PathVariable Integer requestingUserId,
+            @PathVariable Integer requestedUserId,
+            @PathVariable Integer organisationId) {
+                this.organisationService.updateAdmin(requestingUserId, requestedUserId, true, organisationId);
+        return new ResponseEntity(HttpStatus.OK);
     }
 }

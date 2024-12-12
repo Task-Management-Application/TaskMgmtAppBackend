@@ -24,4 +24,8 @@ public interface OrganisationService {
     List<TaskDto> getAllTasksByOrgId(Integer organisationId);
 
     List<UserDto> getAllUsersByOrgId(Integer organisationId);
+
+    void updateAdmin(Integer userId, Integer requestedBy, Boolean make, Integer orgId);
+
+    List<UserDto> getAllAdmins(Integer organisationid);
 }

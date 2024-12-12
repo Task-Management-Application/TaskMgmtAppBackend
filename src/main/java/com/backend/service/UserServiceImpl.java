@@ -21,6 +21,7 @@ import com.backend.entity.Comment;
 import com.backend.entity.Organisation;
 import com.backend.entity.Task;
 import com.backend.entity.User;
+import com.backend.exception.NotAnAdminException;
 import com.backend.exception.ResourceNotFoundException;
 import com.backend.repository.OrganisationRepository;
 import com.backend.repository.UserRepository;
@@ -45,6 +46,10 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     private TaskConverter taskConverter;
+
+    @Autowired
+    private AdminManagementService adminManagementService;
+
     @Override
     public UserDto createUser(UserDto user)
     {
@@ -139,10 +144,13 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public List<UserDto> addUserToOrganisation(Integer userId, Integer orgId)
+    public List<UserDto> addUserToOrganisation(Integer requestingUserId, Integer requestedUserId, Integer orgId)
     {
-        User foundUser = this.userRepo.findById(userId)
-                .orElseThrow(()->new ResourceNotFoundException("User", "Id", userId));
+        if(!adminManagementService.checkAdminPrivilegeForUser(requestingUserId, orgId))
+            throw new NotAnAdminException(requestingUserId, orgId);
+        
+        User foundUser = this.userRepo.findById(requestedUserId)
+                .orElseThrow(()->new ResourceNotFoundException("User", "Id", requestedUserId));
         Organisation foundOrg = this.orgRepo.findById(orgId)
                 .orElseThrow(()->new ResourceNotFoundException("Organisation", "Id", orgId));
         foundUser.getOrgList().add(foundOrg);
