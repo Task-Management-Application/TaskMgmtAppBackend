@@ -29,7 +29,7 @@ public interface UserService {
 
     List<TaskDto> getAllCreatedTasksForuserId(Integer userId);
 
-    List<UserDto> addUserToOrganisation(Integer userId, Integer orgId);
+    List<UserDto> addUserToOrganisation(Integer requestingUserId, Integer requestedUserId, Integer orgId);
 
     List<OrganisationDto> getAllOrganisationsForuserId(Integer userId);
 }

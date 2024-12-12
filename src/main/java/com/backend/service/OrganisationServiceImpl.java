@@ -1,9 +1,12 @@
 package com.backend.service;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
+
+import javax.management.RuntimeErrorException;
 
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +22,8 @@ import com.backend.dto.UserDto;
 import com.backend.entity.Organisation;
 import com.backend.entity.Task;
 import com.backend.entity.User;
+import com.backend.exception.NotAMemberException;
+import com.backend.exception.NotAnAdminException;
 import com.backend.exception.ResourceNotFoundException;
 import com.backend.repository.OrganisationRepository;
 import com.backend.repository.UserRepository;
@@ -36,6 +41,9 @@ public class OrganisationServiceImpl implements OrganisationService {
     private UserService userService;
 
     @Autowired
+    private AdminManagementService adminManagementService;
+
+    @Autowired
     private UserConverter userConverter;
 
     @Autowired
@@ -51,11 +59,11 @@ public class OrganisationServiceImpl implements OrganisationService {
             organisation.setCreatedAt(new Date());
         Organisation newOrganisation = orgConverter.OrganisationDtoToOrganisation(organisation);
         this.organisationRepo.save(newOrganisation);
-        
         OrganisationDto newOrganisationDto = orgConverter.OrganisationToOrganisationDto(newOrganisation);
         User foundUser = this.userRepo.findById(newOrganisationDto.getCreatedBy())
                 .orElseThrow(() -> new ResourceNotFoundException("User", "Id", newOrganisationDto.getCreatedBy()));
         userService.addUserToOrganisation(foundUser.getUserId(), newOrganisationDto.getOrgId());
+        adminManagementService.updateAdmin(newOrganisationDto.getCreatedBy(), newOrganisationDto.getOrgId(), true);
         return newOrganisationDto;
     }
 
@@ -111,5 +119,42 @@ public class OrganisationServiceImpl implements OrganisationService {
         List<User> userList = foundOrganisation.getUsers();
         return userList.stream().map(user -> userConverter.UserToUserDto(user)).collect(Collectors.toList());
 
+    }
+
+    @Override
+    public void updateAdmin(Integer requestingUserId, Integer requestedUserId, Boolean make, Integer organisationId)
+    {
+        if(!adminManagementService.checkAdminPrivilegeForUser(requestingUserId, organisationId))
+            throw new NotAnAdminException(requestingUserId, organisationId);
+        Organisation foundOrganisation = this.organisationRepo.findById(organisationId)
+            .orElseThrow(()-> new ResourceNotFoundException("Organisation", "id", organisationId));
+        User foundUser = this.userRepo.findById(requestedUserId)
+            .orElseThrow(() -> new ResourceNotFoundException("User", "Id", requestedUserId));
+    
+        if(!foundOrganisation.getUsers().contains(foundUser))
+            throw new NotAMemberException(requestedUserId, organisationId);
+        adminManagementService.updateAdmin(requestedUserId, organisationId, make);
+        // User foundUser = this.userRepo.findById(userId)
+        //         .orElseThrow(() -> new ResourceNotFoundException("User", "Id", userId));
+        // Organisation foundOrganisation = this.organisationRepo.findById(organisationId)
+        //         .orElseThrow(()-> new ResourceNotFoundException("Organisation", "id", organisationId));
+        // foundOrganisation.makeAdmin(foundUser, make);
+        // this.organisationRepo.save(foundOrganisation);
+    }
+
+    @Override
+    public List<UserDto> getAllAdmins(Integer organisationId)
+    {
+        Organisation foundOrganisation = this.organisationRepo.findById(organisationId)
+                .orElseThrow(()-> new ResourceNotFoundException("Organisation", "id", organisationId));
+        List<User> userList = foundOrganisation.getUsers();
+        List<User> adminList = new ArrayList<>();
+        
+        for(User user: userList)
+        {
+            if(adminManagementService.checkAdminPrivilegeForUser(user.getUserId(), organisationId))
+                adminList.add(user);
+        }
+        return adminList.stream().map(user -> userConverter.UserToUserDto(user)).collect(Collectors.toList());
     }
 }

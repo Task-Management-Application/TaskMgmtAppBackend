@@ -73,4 +73,10 @@ public class OrganisationController {
     {
         return new ResponseEntity<>(this.organisationService.getAllUsersByOrgId(organisationId),HttpStatus.OK);
     }
+
+    @GetMapping("/{organisationId}/admins")
+    public ResponseEntity<List<UserDto>> getAllAdmins(@PathVariable Integer organisationId)
+    {
+        return new ResponseEntity<>(this.organisationService.getAllAdmins(organisationId),HttpStatus.OK);
+    }
 }
